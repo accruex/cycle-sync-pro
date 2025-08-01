@@ -1,11 +1,12 @@
 ## streamlit_app.py
-# CycleSync Pro: Your Career Calendar as a Streamlit App
+# CycleSync Pro: Your Career Calendar as a Streamlit App with Interactive Calendar View
 # Run locally: streamlit run streamlit_app.py
-# Deploy: push this file + requirements.txt to GitHub, then connect to Streamlit Community Cloud (share.streamlit.io)
+# Deploy: push this file + requirements.txt to GitHub, then connect to Streamlit Community Cloud
 
 import streamlit as st
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from typing import List, Dict
+import calendar
 
 # ----- Cycle Logic -----
 PhaseInfo = Dict[str, any]
@@ -78,18 +79,19 @@ st.set_page_config(page_title="CycleSync Pro", layout="centered")
 st.title("🔄 CycleSync Pro")
 st.subheader("Your Career Calendar for Every Cycle Phase")
 
+# Inputs: cycle start and length
 col1, col2 = st.columns(2)
 with col1:
     start_date = st.date_input("Day 1 of your cycle", date.today() - timedelta(days=1))
 with col2:
     cycle_length = st.slider("Cycle length (days)", 20, 40, 28)
 
-# Compute
+# Compute today's insights
 today = date.today()
 cycle_day = get_cycle_day(start_date, today, cycle_length)
 phase = get_phase_info(cycle_day)
 
-# Display Insights
+# Display Today's Insight card
 st.markdown(f"**Today is Cycle Day {cycle_day}**")
 st.markdown(f"**Phase:** {phase['phase']}")
 st.markdown(f"**Hormonal Landscape:** {phase['hormonal_landscape']}")
@@ -105,10 +107,39 @@ entry = st.text_area("Journal your energy/mood/work notes for today", height=150
 if st.button("Save Entry"):
     st.success("Entry saved! (In a real app, this would persist to a database)")
 
-# ----- Deployment Instructions -----
+# Interactive Calendar View
+st.markdown("---")
+st.markdown("## 📅 Calendar View")
+
+# Generate current month calendar matrix
+cal_matrix = calendar.monthcalendar(today.year, today.month)
+
+selected_day = None
+for week in cal_matrix:
+    cols = st.columns(7)
+    for idx, day_num in enumerate(week):
+        if day_num == 0:
+            cols[idx].write(" ")  # empty cell
+        else:
+            if cols[idx].button(str(day_num), key=f"cal-{day_num}"):
+                selected_day = day_num
+
+# Show recommendations on date click
+if selected_day:
+    sel_date = date(today.year, today.month, selected_day)
+    sel_cycle_day = get_cycle_day(start_date, sel_date, cycle_length)
+    sel_phase = get_phase_info(sel_cycle_day)
+    st.markdown(f"### Recommendations for {sel_date.strftime('%Y-%m-%d')}")
+    st.markdown(f"- Cycle Day: {sel_cycle_day}")
+    st.markdown(f"- Phase: {sel_phase['phase']}")
+    st.markdown(f"- Hormonal Landscape: {sel_phase['hormonal_landscape']}")
+    st.markdown("**Professional Strategies:**")
+    for strat in sel_phase['professional_strategies']:
+        st.markdown(f"  - {strat}")
+
+# Deployment Instructions
 st.markdown("---")
 st.markdown("**To deploy:**")
-st.markdown("1. Create `requirements.txt` with `streamlit` listed.  ")
-st.markdown("2. Push repo to GitHub.  ")
-st.markdown("3. Go to https://share.streamlit.io and connect your repo.  ")
-st.markdown("4. Your app will auto-deploy and be live at `https://share.streamlit.io/<user>/<repo>`.")
+st.markdown("1. Ensure `requirements.txt` lists `streamlit`.  ")
+st.markdown("2. Push to GitHub and connect via https://share.streamlit.io.  ")
+st.markdown("3. App will auto-deploy and be live.")
